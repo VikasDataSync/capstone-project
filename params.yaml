@@ -1,0 +1,9 @@
+data_ingestion:
+  test_size: 0.25
+  bucket_name: capstone-project-vds
+  s3_file_key: data.csv
+  aws_region: us-east-1
+  output_data_dir: data
+
+feature_engineering:
+  max_features: 55
