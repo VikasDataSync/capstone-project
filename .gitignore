@@ -218,3 +218,4 @@ __marimo__/
 .streamlit/secrets.toml
 credential.txt  
 local_s3/
+models/
