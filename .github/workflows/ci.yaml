@@ -38,8 +38,8 @@ jobs:
             echo "AWS credentials available. Running full pipeline."
             dvc repro
           else
-            echo "AWS credentials missing. Skipping data_ingestion and running downstream stages."
-            dvc repro data_preprocessing feature_engineering model_building model_evaluation model_registration
+            echo "AWS credentials missing. Reproducing only non-ingestion stages."
+            dvc repro --single-item model_building model_evaluation model_registration
           fi
 
       - name: Run model tests
