@@ -90,7 +90,13 @@ def register_model(model_name: str, model_info: dict):
 def main():
     try:
         model_info = load_model_info(str(ROOT_DIR / "reports" / "experiment_info.json"))
-        
+
+        if not model_info.get("mlflow_logged", False):
+            logging.warning(
+                "Skipping model registration because MLflow logging was not successful."
+            )
+            return
+
         model_name = "my_model"
         register_model(model_name, model_info)
     except Exception as e:

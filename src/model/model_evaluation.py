@@ -9,7 +9,6 @@ from pathlib import Path
 from sklearn.metrics import accuracy_score, precision_score, recall_score, roc_auc_score
 import mlflow
 import mlflow.sklearn
-import dagshub
 
 try:
     from src.logger import logging
@@ -24,28 +23,23 @@ except ModuleNotFoundError:
 ROOT_DIR = Path(__file__).resolve().parents[2]
 
 
-# Below code block is for production use
-# -------------------------------------------------------------------------------------
-# Set up DagsHub credentials for MLflow tracking
-dagshub_token = os.getenv("CAPSTONE_TEST")
-if not dagshub_token:
-    raise EnvironmentError("CAPSTONE_TEST environment variable is not set")
+def configure_mlflow_tracking() -> bool:
+    """Configure MLflow tracking against DagsHub when token is available."""
+    dagshub_token = os.getenv("CAPSTONE_TEST")
+    if not dagshub_token:
+        logging.warning(
+            "CAPSTONE_TEST not set. Skipping remote MLflow logging."
+        )
+        return False
 
-os.environ["MLFLOW_TRACKING_USERNAME"] = dagshub_token
-os.environ["MLFLOW_TRACKING_PASSWORD"] = dagshub_token
+    os.environ["MLFLOW_TRACKING_USERNAME"] = dagshub_token
+    os.environ["MLFLOW_TRACKING_PASSWORD"] = dagshub_token
 
-dagshub_url = "https://dagshub.com"
-repo_owner = "VikasDataSync"
-repo_name = "capstone-project"
-
-# Set up MLflow tracking URI
-mlflow.set_tracking_uri(f'{dagshub_url}/{repo_owner}/{repo_name}.mlflow')
-# -------------------------------------------------------------------------------------
-
-# Below code block is for local use
-
-# mlflow.set_tracking_uri("https://dagshub.com/VikasDataSync/capstone-project.mlflow")
-# dagshub.init(repo_owner='VikasDataSync', repo_name='capstone-project', mlflow=True)
+    dagshub_url = "https://dagshub.com"
+    repo_owner = "VikasDataSync"
+    repo_name = "capstone-project"
+    mlflow.set_tracking_uri(f"{dagshub_url}/{repo_owner}/{repo_name}.mlflow")
+    return True
 
 
 
@@ -109,10 +103,19 @@ def save_metrics(metrics: dict, file_path: str) -> None:
         logging.error('Error occurred while saving the metrics: %s', e)
         raise
 
-def save_model_info(run_id: str, model_uri: str, file_path: str) -> None:
+def save_model_info(
+    run_id: str | None,
+    model_uri: str | None,
+    file_path: str,
+    mlflow_logged: bool,
+) -> None:
     """Save the model run ID and URI to a JSON file."""
     try:
-        model_info = {"run_id": run_id, "model_uri": model_uri}
+        model_info = {
+            "run_id": run_id,
+            "model_uri": model_uri,
+            "mlflow_logged": mlflow_logged,
+        }
         with open(file_path, 'w') as file:
             json.dump(model_info, file, indent=4)
         logging.debug('Model info saved to %s', file_path)
@@ -121,45 +124,51 @@ def save_model_info(run_id: str, model_uri: str, file_path: str) -> None:
         raise
 
 def main():
-    mlflow.set_experiment("my-dvc-pipeline")
-    with mlflow.start_run() as run:  # Start an MLflow run
-        try:
-            clf = load_model(str(ROOT_DIR / "models" / "model.pkl"))
-            test_data = load_data(str(ROOT_DIR / "data" / "processed" / "test_bow.csv"))
-            
-            X_test = test_data.iloc[:, :-1].values
-            y_test = test_data.iloc[:, -1].values
+    try:
+        clf = load_model(str(ROOT_DIR / "models" / "model.pkl"))
+        test_data = load_data(str(ROOT_DIR / "data" / "processed" / "test_bow.csv"))
 
-            metrics = evaluate_model(clf, X_test, y_test)
-            
-            save_metrics(metrics, str(ROOT_DIR / "reports" / "metrics.json"))
-            
-            # Log metrics to MLflow
-            for metric_name, metric_value in metrics.items():
-                mlflow.log_metric(metric_name, metric_value)
-            
-            # Log model parameters to MLflow
-            if hasattr(clf, 'get_params'):
-                params = clf.get_params()
-                for param_name, param_value in params.items():
-                    mlflow.log_param(param_name, param_value)
-            
-            # Log model to MLflow
-            logged_model = mlflow.sklearn.log_model(clf, "model")
-            
-            # Save model info
-            save_model_info(
-                run.info.run_id,
-                logged_model.model_uri,
-                str(ROOT_DIR / "reports" / "experiment_info.json"),
-            )
-            
-            # Log the metrics file to MLflow
-            mlflow.log_artifact(str(ROOT_DIR / "reports" / "metrics.json"))
+        X_test = test_data.iloc[:, :-1].values
+        y_test = test_data.iloc[:, -1].values
+        metrics = evaluate_model(clf, X_test, y_test)
+        save_metrics(metrics, str(ROOT_DIR / "reports" / "metrics.json"))
 
-        except Exception as e:
-            logging.error('Failed to complete the model evaluation process: %s', e)
-            print(f"Error: {e}")
+        mlflow_logged = False
+        run_id = None
+        model_uri = None
+        if configure_mlflow_tracking():
+            try:
+                mlflow.set_experiment("my-dvc-pipeline")
+                with mlflow.start_run() as run:
+                    for metric_name, metric_value in metrics.items():
+                        mlflow.log_metric(metric_name, metric_value)
+
+                    if hasattr(clf, "get_params"):
+                        params = clf.get_params()
+                        for param_name, param_value in params.items():
+                            mlflow.log_param(param_name, param_value)
+
+                    logged_model = mlflow.sklearn.log_model(clf, "model")
+                    mlflow.log_artifact(str(ROOT_DIR / "reports" / "metrics.json"))
+                    run_id = run.info.run_id
+                    model_uri = logged_model.model_uri
+                    mlflow_logged = True
+            except Exception as e:
+                logging.warning(
+                    "MLflow logging skipped due to tracking server error: %s",
+                    e,
+                )
+
+        save_model_info(
+            run_id,
+            model_uri,
+            str(ROOT_DIR / "reports" / "experiment_info.json"),
+            mlflow_logged,
+        )
+    except Exception as e:
+        logging.error('Failed to complete the model evaluation process: %s', e)
+        print(f"Error: {e}")
+        raise
 
 if __name__ == '__main__':
     main()
