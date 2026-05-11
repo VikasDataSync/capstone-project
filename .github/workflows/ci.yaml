@@ -27,14 +27,6 @@ jobs:
         run: |
           pip install -r requirements.txt
 
-      - name: configure aws credentials
-        if: ${{ (secrets.AWS_ACCESS_KEY_ID != '' || vars.AWS_ACCESS_KEY_ID != '') && (secrets.AWS_SECRET_ACCESS_KEY != '' || vars.AWS_SECRET_ACCESS_KEY != '') }}
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID || vars.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY || vars.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ vars.AWS_REGION || secrets.AWS_REGION || 'us-east-1' }}
-
       - name: run pipeline
         env:
           CAPSTONE_TEST: ${{ secrets.CAPSTONE_TEST }}
@@ -50,23 +42,23 @@ jobs:
             dvc repro data_preprocessing feature_engineering model_building model_evaluation model_registration
           fi
 
-      # - name: Run model tests
-      #   env:
-      #     CAPSTONE_TEST: ${{ secrets.CAPSTONE_TEST }}
-      #   run: |
-      #     python -m unittest tests/test_model.py
+      - name: Run model tests
+        env:
+          CAPSTONE_TEST: ${{ secrets.CAPSTONE_TEST }}
+        run: |
+          python -m unittest tests/test_model.py
 
-      # - name: Promote model to production
-      #   if: success()
-      #   env:
-      #     CAPSTONE_TEST: ${{ secrets.CAPSTONE_TEST }}
-      #   run: python scripts/promote_model.py
+      - name: Promote model to production
+        if: success()
+        env:
+          CAPSTONE_TEST: ${{ secrets.CAPSTONE_TEST }}
+        run: python scripts/promote_model.py
 
-      # - name: Run Flask app tests
-      #   if: success()
-      #   env:
-      #     CAPSTONE_TEST: ${{ secrets.CAPSTONE_TEST }}
-      #   run: python -m unittest tests/test_flask_app.py
+      - name: Run Flask app tests
+        if: success()
+        env:
+          CAPSTONE_TEST: ${{ secrets.CAPSTONE_TEST }}
+        run: python -m unittest tests/test_flask_app.py
 
       # - name: Login to AWS ECR
       #   if: success()
