@@ -114,7 +114,7 @@ PREDICTION_COUNT = Counter(
 # ------------------------------------------------------------------------------------------
 # Model and vectorizer setup
 model_name = "my_model"
-ROOT_DIR = Path(__file__).resolve().parents[1]
+ROOT_DIR = Path(__file__).resolve().parent
 LOCAL_MODEL_PATH = ROOT_DIR / "models" / "model.pkl"
 LOCAL_VECTORIZER_PATH = ROOT_DIR / "models" / "vectorizer.pkl"
 
