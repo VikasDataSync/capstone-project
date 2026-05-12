@@ -6,6 +6,7 @@ import os
 import pandas as pd
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 import pickle
+from mlflow.exceptions import MlflowException
 
 class TestModelLoading(unittest.TestCase):
 
@@ -20,8 +21,8 @@ class TestModelLoading(unittest.TestCase):
         os.environ["MLFLOW_TRACKING_PASSWORD"] = dagshub_token
 
         dagshub_url = "https://dagshub.com"
-        repo_owner = "vikashdas770"
-        repo_name = "YT-Capstone-Project"
+        repo_owner = "VikasDataSync"
+        repo_name = "capstone-project"
 
         # Set up MLflow tracking URI
         mlflow.set_tracking_uri(f'{dagshub_url}/{repo_owner}/{repo_name}.mlflow')
@@ -29,6 +30,8 @@ class TestModelLoading(unittest.TestCase):
         # Load the new model from MLflow model registry
         cls.new_model_name = "my_model"
         cls.new_model_version = cls.get_latest_model_version(cls.new_model_name)
+        if cls.new_model_version is None:
+            raise RuntimeError(f"No model versions found for '{cls.new_model_name}'")
         cls.new_model_uri = f'models:/{cls.new_model_name}/{cls.new_model_version}'
         cls.new_model = mlflow.pyfunc.load_model(cls.new_model_uri)
 
@@ -41,8 +44,19 @@ class TestModelLoading(unittest.TestCase):
     @staticmethod
     def get_latest_model_version(model_name, stage="Staging"):
         client = mlflow.MlflowClient()
-        latest_version = client.get_latest_versions(model_name, stages=[stage])
-        return latest_version[0].version if latest_version else None
+        for target_stage in [stage, "Production", "Staging", "None"]:
+            try:
+                latest_version = client.get_latest_versions(model_name, stages=[target_stage])
+                if latest_version:
+                    return latest_version[0].version
+            except MlflowException:
+                continue
+
+        all_versions = client.search_model_versions(f"name='{model_name}'")
+        if all_versions:
+            return max(all_versions, key=lambda version: int(version.version)).version
+
+        return None
 
     def test_model_loaded_properly(self):
         self.assertIsNotNone(self.new_model)
