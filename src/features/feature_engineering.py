@@ -72,6 +72,7 @@ def apply_bow(train_data: pd.DataFrame, test_data: pd.DataFrame, max_features: i
         test_df['label'] = y_test
 
         model_path = ROOT_DIR / "models" / "vectorizer.pkl"
+        model_path.parent.mkdir(parents=True, exist_ok=True)
         with model_path.open("wb") as model_file:
             pickle.dump(vectorizer, model_file)
         logging.info('Bag of Words applied and data transformed')
