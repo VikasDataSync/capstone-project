@@ -48,7 +48,7 @@
 31. Add .github/workflows/ci.yaml file
 
 32. Create key token on Dagshub for auth: Go to dagshub repo > Your settings > Tokens > Generate new token
-    >> Please make sure to save token << >> capstone_test: 54b1d67648a9b1267ef906fsdfsd8b292f779f0<<
+    >> Please make sure to save token << >> capstone_test: <DAGSHUB_TOKEN><<
     >> Add this auth token to github secret&var and update on ci file
 
 
@@ -62,7 +62,7 @@
 35. go to root dir and: "docker build -t capstone-app:latest ."
 36. Try running the image: "docker run -p 8888:5000 capstone-app:latest"
     - This run will give 'OSError: capstone_test environment variable is not set'...obviously
-    - alternate: docker run -p 8888:5000 -e CAPSTONE_TEST=54b1d67648a9b1267ef906fsdfsd8b292f779f0 capstone-app:latest
+    - alternate: docker run -p 8888:5000 -e CAPSTONE_TEST=<DAGSHUB_TOKEN> capstone-app:latest
     - docker push youruser/capstone-app:latest (optional)
     - optional: try to delete image locally and pull it from dockerhub and run (optional)
 
@@ -143,8 +143,7 @@ kubectl get svc
 48. Once the LoadBalancer service is up, get the external IP:
 kubectl get svc flask-app-service
 
-49. Try externa-ip:5000 directly on url or on terminal : curl http://external-ip:5000
-curl http://a6bf6255d5f61470c9782b8955c98271-1409247973.us-east-1.elb.amazonaws.com:5000
+49. Try externa-ip:5000 directly on url or on terminal : curla56e248151a8242768d57983aef33ff8-1951651825.us-east-1.elb.amazonaws.com
 
 
 
@@ -179,7 +178,7 @@ global:
 scrape_configs:
   - job_name: "flask-app"
     static_configs:
-      - targets: ["a6bf6255d5f61470c9782b8955c98271-1409247973.us-east-1.elb.amazonaws.com:5000"]  # Replace with your app's External IP
+      - targets: ["a56e248151a8242768d57983aef33ff8-1951651825.us-east-1.elb.amazonaws.com:5000"]  # Replace with your app's External IP
 
 
 
@@ -206,10 +205,12 @@ ssh -i your-key.pem ubuntu@your-ec2-public-ip
 60. Update and upgrade system packages:
 sudo apt update && sudo apt upgrade -y
 
-61. Download Grafana: wget https://dl.grafana.com/oss/release/grafana_10.1.5_amd64.deb
+61. Download Grafana: wget https://dl.grafana.com/grafana/release/13.0.1+security-01/grafana_13.0.1+security-01_25720641773_linux_amd64.deb
+
+
 (this is a stable version for now; adjust the link if necessary.)
 
-62. Install Grafana: sudo apt install ./grafana_10.1.5_amd64.deb -y
+62. Install Grafana: sudo apt install ./grafana_13.0.1+security-01_25720641773_linux_amd64.deb -y
 
 63. Start the Grafana service: sudo systemctl start grafana-server
 
@@ -219,7 +220,7 @@ sudo apt update && sudo apt upgrade -y
 
 66. Open Grafana web UI: http://<ec2-public-ip>:3000 (username/pass - admin)
 
-67. Add Prometheus as a Data Source: http://54.81.71.206/:9090
+67. Add Prometheus as a Data Source: http://34.205.141.235/:9090
     click - Save and Test | Get started with building dashboards.
 
 
