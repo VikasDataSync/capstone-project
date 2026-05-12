@@ -81,7 +81,8 @@ jobs:
 
       - name: Build Docker image
         run: |
-            docker build -t ${{ vars.ECR_REPOSITORY || secrets.ECR_REPOSITORY }}:latest .
+            ls -la "$GITHUB_WORKSPACE"
+            docker build -t ${{ vars.ECR_REPOSITORY || secrets.ECR_REPOSITORY }}:latest -f "$GITHUB_WORKSPACE/Dockerfile" "$GITHUB_WORKSPACE"
 
       - name: Tag Docker image
         run: |
