@@ -115,8 +115,21 @@ PREDICTION_COUNT = Counter(
 # Model and vectorizer setup
 model_name = "my_model"
 ROOT_DIR = Path(__file__).resolve().parent
-LOCAL_MODEL_PATH = ROOT_DIR / "models" / "model.pkl"
-LOCAL_VECTORIZER_PATH = ROOT_DIR / "models" / "vectorizer.pkl"
+
+
+def resolve_artifact_path(file_name: str) -> Path:
+    candidates = [
+        ROOT_DIR / "models" / file_name,          # Docker: /app/models
+        ROOT_DIR.parent / "models" / file_name,   # Repo: <root>/models
+    ]
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+    return candidates[0]
+
+
+LOCAL_MODEL_PATH = resolve_artifact_path("model.pkl")
+LOCAL_VECTORIZER_PATH = resolve_artifact_path("vectorizer.pkl")
 
 
 def get_latest_model_version(model_name):
