@@ -93,7 +93,7 @@ If the path points to your Anaconda environment (e.g., C:\Users\Personal\anacond
 
 * Download kubectl: Invoke-WebRequest -Uri "https://dl.k8s.io/release/v1.28.2/bin/windows/amd64/kubectl.exe" -OutFile "kubectl.exe"
 * Locate the Download: Get-Location
-* Move kubectl.exe to a directory in your system PATH, such as C:\Windows\System32: Move-Item -Path .\kubectl.exe -Destination "C:\Windows\System32"
+* Move kubectl.exe to a directory in your system PATH, such as C:\Users\vikas\OneDrive\Documents\MLOps\capstone-project: Move-Item -Path .\kubectl.exe -Destination "C:\Windows\System32"
 * Test if kubectl is properly installed: kubectl version --client
 
 
